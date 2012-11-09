@@ -144,6 +144,7 @@ class DynamoDBShell(Cmd):
             if connection is None:
                 raise Exception('Region name misconfigured in boto config. ' 
                  + 'The value must map to a real DynamoDb region.')
+            return connection
         except ConfigParser.NoSectionError:
             return boto.connect_dynamodb() 
 
