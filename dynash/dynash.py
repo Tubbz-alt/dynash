@@ -192,6 +192,13 @@ class DynamoDBShell(Cmd):
 
         print "]"
 
+    def is_number(self, s):
+        try:
+            float(s)
+            return True
+        except ValueError:
+            return False
+
     def getargs(self, line):
         return shlex.split(str(line.decode('string-escape')))
 
@@ -421,6 +428,8 @@ class DynamoDBShell(Cmd):
         """
 
         table, line = self.get_table_params(line)
+        
+
 
         if line.startswith('(') or line.startswith('[') or line.find(",") > 0:
             # list of IDs
@@ -436,7 +445,7 @@ class DynamoDBShell(Cmd):
                     rkey = None
                 else:
                     hkey = unicode(id[0])
-                    hkey = unicode(id[1])
+                    rkey = unicode(id[1])
 
                 ordered[(hkey, rkey)] = None
 
@@ -456,6 +465,9 @@ class DynamoDBShell(Cmd):
             hkey = args[0]
             rkey = args[1] if len(args) > 1 else None
 
+            if rkey and self.is_number(rkey):
+                rkey = float(rkey)
+            
             item = table.get_item(hkey, rkey,
                                   consistent_read=self.consistent)
             self.pprint(item)
