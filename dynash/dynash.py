@@ -31,13 +31,14 @@ from version import __version__
 from cmd2 import Cmd
 
 import boto
+from boto.dynamodb import connect_to_region
 from boto.dynamodb.exceptions import DynamoDBResponseError, BotoClientError
-from boto.dynamodb.condition import *
+from boto.dynamodb.condition import * #@UnusedWildImport
 
+import ConfigParser
 import ast
 import json
 import logging
-import os
 import os.path
 import pprint
 import re
@@ -54,7 +55,7 @@ except ImportError:
     except ImportError:
         readline = None
 else:
-    import rlcompleter
+    import rlcompleter #@UnusedImport
     if(sys.platform == 'darwin'):
         readline.parse_and_bind("bind ^I rl_complete")
     else:
@@ -131,12 +132,27 @@ class DynamoDBShell(Cmd):
         else:
             boto.set_stream_logger('boto', level=logging.WARNING)
 
+    '''
+    Get a DynamoDb connection. If region is specified in boto config, then use it.
+    '''
+    def connect_to_dynamo(self):
+        config = ConfigParser.ConfigParser()
+        config.read(["/etc/boto.cfg"])
+        try:
+            region_name = config.get('dynamodb', 'region')
+            connection = connect_to_region(region_name)
+            if connection is None:
+                raise Exception('Region name misconfigured in boto config. ' 
+                 + 'The value must map to a real DynamoDb region.')
+        except ConfigParser.NoSectionError:
+            return boto.connect_dynamodb() 
+
     def __init__(self):
         Cmd.__init__(self)
 
         self.pp = pprint.PrettyPrinter(indent=4)
-
-        self.conn = boto.connect_dynamodb()
+        
+        self.conn = self.connect_to_dynamo()
 
         # by default readline thinks - and other characters are word delimiters :(
         if readline:
@@ -618,7 +634,6 @@ class DynamoDBShell(Cmd):
 
 def run_command():
     DynamoDBShell().cmdloop()
-
 
 if __name__ == '__main__':
     run_command()
