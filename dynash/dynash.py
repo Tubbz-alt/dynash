@@ -133,20 +133,26 @@ class DynamoDBShell(Cmd):
             boto.set_stream_logger('boto', level=logging.WARNING)
 
     '''
-    Get a DynamoDb connection. If region is specified in boto config, then use it.
+    Get a DynamoDb connection.
+    If key and secret are not specified, they will be retrieved from boto config
+    If region is specified in boto config, then use it.
     '''
-    def connect_to_dynamo(self):
+    def connect_to_dynamo(self, aws_access_key_id=None, aws_secret_access_key=None):
         config = ConfigParser.ConfigParser()
         config.read(["/etc/boto.cfg"])
         try:
+            credentials = {
+                'aws_access_key_id' : aws_access_key_id,
+                'aws_secret_access_key' : aws_secret_access_key
+            }
             region_name = config.get('dynamodb', 'region')
-            connection = connect_to_region(region_name)
+            connection = connect_to_region(region_name, **credentials)
             if connection is None:
                 raise Exception('Region name misconfigured in boto config. ' 
                  + 'The value must map to a real DynamoDb region.')
             return connection
         except ConfigParser.NoSectionError:
-            return boto.connect_dynamodb() 
+            return boto.connect_dynamodb(aws_access_key_id, aws_secret_access_key) 
 
     def __init__(self):
         Cmd.__init__(self)
@@ -216,11 +222,11 @@ class DynamoDBShell(Cmd):
         if line:
             args = self.getargs(line)
 
-            self.conn = boto.connect_dynamodb(
+            self.conn = self.connect_to_dynamo(
                 aws_access_key_id=args[0],
                 aws_secret_access_key=args[1])
         else:
-            self.conn = boto.connect_dynamodb()
+            self.conn = self.connect_to_dynamo()
 
         self.do_tables('')
 
