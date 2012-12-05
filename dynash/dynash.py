@@ -558,6 +558,8 @@ class DynamoDBShell(Cmd):
 
         result = table.query(hkey, attributes_to_get=attrs, scan_index_forward=asc, max_results=max)
 
+        self.print_iterator(result)
+
         if self.print_consumed:
             print "consumed units:", result.consumed_units
 
